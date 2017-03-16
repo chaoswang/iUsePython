@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*
+# -*- coding: utf-8 -*-
 
 # 项目经理
 class Director:
     def __init__(self):
         self.builder = None
+
 
     def construct_building(self):
         self.builder.new_building()
