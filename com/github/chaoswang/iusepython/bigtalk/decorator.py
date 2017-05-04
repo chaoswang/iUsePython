@@ -1,3 +1,4 @@
+# 展示一个人一件一件穿衣服的过程
 class Person:
     def __init__(self, name):
         self.name = name
