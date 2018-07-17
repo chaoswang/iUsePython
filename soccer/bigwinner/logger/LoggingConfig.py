@@ -10,7 +10,7 @@ import yaml
 
 class LoggingConfig:
     def __init__(self):
-        with open('/home/soccer/pyLearning/prj_soccer/com/github/chaoswang/soccer/bigwinner/logger/logging.yml', 'r') as f_conf:
+        with open('E:\\workspace_py\\prj_soccer\\com\\github\\chaoswang\\soccer\\bigwinner\\logger\\logging.yml', 'r') as f_conf:
             dict_conf = yaml.load(f_conf)
         logging.config.dictConfig(dict_conf)
 
@@ -27,3 +27,8 @@ if __name__ == '__main__':
     logger.warning('warn message')
     logger.error('error message')
     logger.critical('critical message')
+
+    try:
+        1/0
+    except BaseException as e:
+        logger.exception(e)

@@ -1,7 +1,7 @@
 version: 1
 formatters:
  simple:
-  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  format: '%(asctime)s - %(filename)s[%(lineno)d] - %(levelname)s - %(message)s'
 handlers:
  console:
   class: logging.StreamHandler
@@ -13,7 +13,7 @@ handlers:
   encoding : utf-8
   when : D
   formatter: simple
-  filename: /home/soccer/pyLearning/prj_soccer/com/github/chaoswang/soccer/bigwinner/logger/soccer.log
+  filename: E:\\workspace_py\\prj_soccer\\com\\github\\chaoswang\\soccer\\bigwinner\\logger\\soccer.log
   backupCount: 3
 loggers:
  Soccer168:

@@ -2,57 +2,68 @@
 # -*- coding: utf-8 -*-
 import re
 import time
-from apscheduler.schedulers.blocking import BlockingScheduler
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from com.github.chaoswang.soccer.bigwinner.logger.LoggingConfig import LoggingConfig
-from com.github.chaoswang.soccer.bigwinner.staticinfo.StaticInfo import insertOne, query_filtered, truncate_today_data
+from com.github.chaoswang.soccer.bigwinner.staticinfo.HistoryStaticInfo import insertOne
 import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
-from sqlalchemy import create_engine
+import threading
 
 class StaticInfoParser:
     def __init__(self):
         self.__driver = webdriver.PhantomJS(executable_path='E:\\soccer\\phantomjs-2.1.1-windows\\bin\\phantomjs.exe')
-        self.__driver.get('http://bf2.310v.com:3389/index.html')
-        # self.__driver.get('http://ny.310v.com:3389/dt/over.html?md=2018-05-04')
+        # self.__driver.get('http://bf2.310v.com:3389/index.html')
+        self.__driver.get('http://ny.310v.com:3389/dt/over.html?md=2018-05-15')
         self.__driver.implicitly_wait(20)
         time.sleep(2)
+        # 切换到前1天的历史场次
+        self.__driver.find_element_by_xpath("//td[@onclick='select_date(3,1)']").click()
+        # 切换到前2天的历史场次
+        # self.__driver.find_element_by_xpath("//td[@onclick='select_date(4,1)']").click()
+        time.sleep(3)
 
     @property
     def web_driver(self):
         return self.__driver
 
-    # 获取今日比赛数据
+    # 获取历史比赛数据
     @property
     def match_id(self):
         page_source = self.__driver.page_source
         matches = []
         try:
             soup = BeautifulSoup(page_source, "html.parser")
-            trs = soup.findAll("tr", {"id": re.compile("d[0-9]+")})
-            for tr in trs:
-                # if tr.find("span", {"class": "hot"}):
-                matches.append(tr.get("id"))
+            imgs = soup.findAll("img", {"src": "/images/fx2.gif"})
+            for img in imgs:
+                idStr = img.get("onclick")
+                id = idStr[idStr.index("(") + 1:idStr.index(",")]
+                matches.append(id)
         except AttributeError as e:
             print(e)
             return None
         print(matches)
         return matches
 
-def parse_html_into_db(driver, matches, engine, logger):
+def parse_html_into_db():
+    parser = StaticInfoParser()
+    driver = parser.web_driver
+    matches = parser.match_id
+    log = LoggingConfig()
+    logger = log.logger
     for index in range(len(matches)):
         try:
             # 历史比赛数据
-            # analysis_url = 'http://ny.310v.com:3389/match_fx/fenxi_html.html?mid='+ matches[index]
+            analysis_url = 'http://ny.310v.com:3389/match_fx/fenxi_html.html?mid='+ matches[index]
             # 今日比赛数据
-            analysis_url = "http://ny.310v.com:3389/match_fx/fenxi_html.html?mid=" + matches[index][1:]
+            # analysis_url = "http://ny.310v.com:3389/match_fx/fenxi_html.html?mid=" + matches[index][1:]
             logger.info(analysis_url)
             driver.get(analysis_url)
             driver.implicitly_wait(5)
 
             html = driver.page_source
+            # print(html)
             soup = BeautifulSoup(html, 'html.parser')
 
             # 没有澳门心水跳过
@@ -72,9 +83,7 @@ def parse_html_into_db(driver, matches, engine, logger):
                     aomen_data_list.append(aomen_text)
 
             # 历史比赛数据
-            # MatchId = matches[index]
-            # 今日比赛数据
-            MatchId = matches[index][1:]
+            MatchId = matches[index]
             # logger.info(MatchId)
             MatchType = aomen_data_list[4]
             # logger.info(MatchType)
@@ -228,75 +237,15 @@ def parse_html_into_db(driver, matches, engine, logger):
             RecommendReason = aomen_data_list[12]
             # logger.info(RecommendReason)
 
-            list = [MatchId, MatchType, MatchDate, Host, Guest, HostRank, GuestRank, HostAsianOdds,
+            insertOne(MatchId, MatchType, MatchDate, Host, Guest, HostRank, GuestRank, HostAsianOdds,
                       InitialHostAsianOdds, Concede, InitialConcede, GuestAsianOdds, InitialGuestAsianOdds,
                       BigOdds, InitialBigOdds, BigSmall, InitialBigSmall, SmallOdds,
                       InitialSmallOdds, HostEuropeOdds, InitialHostEuropeOdds, DeuceEuropeOdds,
                       InitialDeuceEuropeOdds, GuestEuropeOdds, InitialGuestEuropeOdds, HostGameTrend,
-                      GuestGameTrend, HostBetTrend, GuestBetTrend, CounterResult, MacaoRecommend, RecommendReason]
-            insertOne(list, engine, logger)
+                      GuestGameTrend, HostBetTrend, GuestBetTrend, CounterResult, MacaoRecommend, RecommendReason)
         except BaseException as e:
-            logger.exception(e)
+            logger.info(e)
             continue
 
-def query_filtered_match(driver, logger):
-    matches = query_filtered(logger)
-    if len(matches) < 1:
-        return None
-
-    output_html = "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\r\n"
-    for index in range(len(matches)):
-        fenxi_url = "http://ny.310v.com:3389/match_fx/fenxi_html.html?mid=" + str(matches[index])
-        logger.info(fenxi_url)
-        driver.get(fenxi_url)
-        driver.implicitly_wait(5)
-        html = driver.page_source
-        soup = BeautifulSoup(html, "html.parser")
-        odds = str(soup.find("table", {"id": "id_tb_dw"}))
-        aomen = str(soup.find("table", {"id": "bbdg_7"}))
-        output_html += odds + "\r\n" + aomen
-    return output_html
-
-def send_mail(html_to_send, logger):
-    # 第三方 SMTP 服务
-    mail_host = "smtp.qq.com"  # 设置服务器
-    mail_user = "263050006@qq.com"  # 用户名
-    mail_pass = "ryrzjgjtphqvcaaj"  #  口令,QQ邮箱是输入授权码，在qq邮箱设置 里用验证过的手机发送短信获得，不含空格
-
-    sender = '263050006@qq.com'
-    receivers = '263050006@qq.com'  # 接收邮件，可设置为你的QQ邮箱或者其他邮箱
-
-    message = MIMEText(html_to_send, 'html', 'utf-8')
-    message['From'] = Header(sender, 'utf-8')
-    message['To'] = Header(receivers, 'utf-8')
-    message['Subject'] = Header('今日热点', 'utf-8')
-
-    try:
-        smtpObj = smtplib.SMTP_SSL(mail_host, 465)
-        smtpObj.login(mail_user, mail_pass)
-        smtpObj.sendmail(sender, receivers, message.as_string())
-        logger.info("邮件发送成功")
-        smtpObj.quit()
-    except smtplib.SMTPException as e:
-        logger.info("无法发送邮件", e)
-
-def main(engine, logger):
-    parser = StaticInfoParser()
-    try:
-        truncate_today_data(engine)
-        parse_html_into_db(parser.web_driver, parser.match_id, engine, logger)
-        output_html = query_filtered_match(parser.web_driver, logger)
-        if output_html:
-            send_mail(output_html, logger)
-    except BaseException as e:
-        logger.warn('主方法定时器异常', e)
-
 if __name__ == '__main__':
-    logger = LoggingConfig().logger
-    timer = BlockingScheduler()
-    engine = create_engine('mysql+mysqlconnector://root:password@localhost:3306/soccer')
-    #先执行一遍
-    main(engine, logger)
-    timer.add_job(lambda: main(engine, logger), 'interval', seconds=3600)
-    logger.info('启动定时器')
-    timer.start()
+    parse_html_into_db()
