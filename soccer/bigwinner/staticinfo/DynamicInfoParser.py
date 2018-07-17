@@ -4,8 +4,8 @@ import re
 import time
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from com.github.chaoswang.soccer.bigwinner.logger.LoggingConfig import LoggingConfig
-from com.github.chaoswang.soccer.bigwinner.staticinfo.DynamicInfo import insertOne
+from soccer.bigwinner.logger.LoggingConfig import LoggingConfig
+from soccer.bigwinner.staticinfo.DynamicInfo import insertOne
 
 class DynamicInfoParser:
     def __init__(self):

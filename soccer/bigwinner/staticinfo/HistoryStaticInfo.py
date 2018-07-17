@@ -3,7 +3,7 @@
 from sqlalchemy import Column, String, BigInteger, Integer, DATETIME, VARCHAR, SmallInteger, Float, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from com.github.chaoswang.soccer.bigwinner.logger.LoggingConfig import LoggingConfig
+from soccer.bigwinner.logger.LoggingConfig import LoggingConfig
 import mysql.connector
 import contextlib
 

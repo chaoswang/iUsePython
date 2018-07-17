@@ -5,8 +5,8 @@ import time
 from apscheduler.schedulers.blocking import BlockingScheduler
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from com.github.chaoswang.soccer.bigwinner.logger.LoggingConfig import LoggingConfig
-from com.github.chaoswang.soccer.bigwinner.staticinfo.StaticInfo import insertOne, query_filtered, truncate_today_data
+from soccer.bigwinner.logger.LoggingConfig import LoggingConfig
+from soccer.bigwinner.staticinfo.StaticInfo import insertOne, query_filtered, truncate_today_data
 import smtplib
 from email.mime.text import MIMEText
 from email.header import Header

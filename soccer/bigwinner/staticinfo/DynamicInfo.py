@@ -1,9 +1,9 @@
 #! python3
 # -*- coding: utf-8 -*-
-from sqlalchemy import Column, String, BigInteger, Integer, DATETIME, VARCHAR, SmallInteger, Float, create_engine
+from soccer.bigwinner.logger.LoggingConfig import LoggingConfig
+from sqlalchemy import Column, BigInteger, VARCHAR, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from com.github.chaoswang.soccer.bigwinner.logger.LoggingConfig import LoggingConfig
 
 # 创建对象的基类:
 Base = declarative_base()
